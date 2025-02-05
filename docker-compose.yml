@@ -1,0 +1,30 @@
+services:
+
+  telegram-bot:
+    container_name: worldacademy-bot-dev
+
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    environment:
+      - SERVER_HOST=http://host.docker.internal:8000
+
+
+    env_file:
+      - .env
+
+    command: sh ./start.dev.sh
+
+    networks:
+      - server_worldacademy-network
+
+    develop:
+      watch:
+        - action: sync
+          path: ./telegram_bot/
+          target: /app/telegram_bot/
+
+networks:
+  server_worldacademy-network:
+    external: true
