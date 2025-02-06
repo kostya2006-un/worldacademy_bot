@@ -19,15 +19,14 @@ class AuthMiddleware(BaseMiddleware):
 
         telegram_user = update.from_user
         server: Server = data.get("server")
-        user = await server.get_user_by_id(telegram_user.id)
         bot: Bot = data.get("bot")
-        if user:
-            await server.put_user(
-                User.map_from_aiogram_user(
-                    aiogram_user=telegram_user,
-                )
+
+        user = await server.get_user_by_id(telegram_user.id)
+
+        if not user:
+            # Если пользователя нет в БД, создаем его
+            user = await server.create_user(
+                User.map_from_aiogram_user(aiogram_user=telegram_user)
             )
 
-            return await handler(update, {**data, "user": user})
-
-        await update.delete()
+        return await handler(update, {**data, "user": user})

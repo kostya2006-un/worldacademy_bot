@@ -24,7 +24,7 @@ class UserAPI(BaseServer):
 
     @logger.catch
     async def create_user(self, user: User) -> User | None:
-        response = await self.client.post("/users/", json=user.model_dump())
+        response = await self.client.post("/users", json=user.model_dump())
         if response.status_code != 201:
             return
 
