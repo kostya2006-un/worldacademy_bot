@@ -28,5 +28,11 @@ class AuthMiddleware(BaseMiddleware):
             user = await server.create_user(
                 User.map_from_aiogram_user(aiogram_user=telegram_user)
             )
+        else:
+            await server.put_user(
+                User.map_from_aiogram_user(
+                    aiogram_user=telegram_user,
+                )
+            )
 
         return await handler(update, {**data, "user": user})

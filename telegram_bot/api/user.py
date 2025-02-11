@@ -32,11 +32,10 @@ class UserAPI(BaseServer):
 
     @logger.catch
     async def put_user(self, user: User) -> User | None:
-        response = await self.client.put(
-            f"/users/{user.id_user}/", json=user.model_dump()
-        )
+        user_data = User.model_validate(user.model_dump(exclude_unset=True))  # Преобразуем в UserUpdate
+        response = await self.client.put(f"/users/{user.id_user}/", json=user_data.model_dump())
 
         if response.status_code != 200:
             return
 
-        return User.model_validate(response.json())
+        return response.json()
