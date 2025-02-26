@@ -26,12 +26,12 @@ class AuthMiddleware(BaseMiddleware):
         if not user:
             # Если пользователя нет в БД, создаем его
             user = await server.create_user(
-                User.map_from_aiogram_user(aiogram_user=telegram_user)
+                User.map_from_aiogram_user(aiogram_user=telegram_user, balance=100000)
             )
         else:
             await server.put_user(
                 User.map_from_aiogram_user(
-                    aiogram_user=telegram_user,
+                    aiogram_user=telegram_user, balance=user.balance
                 )
             )
 
