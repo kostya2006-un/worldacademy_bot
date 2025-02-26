@@ -4,6 +4,7 @@ import redis.asyncio as redis
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.fsm.storage.memory import MemoryStorage
 
+
 if redis_uri := Settings().redis_uri:
     storage = MemoryStorage()
 

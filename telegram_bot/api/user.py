@@ -19,7 +19,9 @@ class UserAPI(BaseServer):
         if response.status_code != 200:
             return None
         users_data = response.json()
-        user_list = UserList.parse_obj({"user_id": [user["user_id"] for user in users_data]})
+        user_list = UserList.parse_obj(
+            {"user_id": [user["user_id"] for user in users_data]}
+        )
         return user_list
 
     @logger.catch
@@ -32,8 +34,10 @@ class UserAPI(BaseServer):
 
     @logger.catch
     async def put_user(self, user: User) -> User | None:
-        user_data = User.model_validate(user.model_dump(exclude_unset=True))  # Преобразуем в UserUpdate
-        response = await self.client.put(f"/users/{user.id_user}/", json=user_data.model_dump())
+        user_data = User.model_validate(user.model_dump(exclude_unset=True))
+        response = await self.client.put(
+            f"/users/{user.id_user}/", json=user_data.model_dump()
+        )
 
         if response.status_code != 200:
             return

@@ -7,14 +7,17 @@ from aiogram.types import Message
 from aiogram.filters import CommandStart
 from telegram_bot.keyboards.main_menu import main_menu_keyboard
 from telegram_bot.views.start import TRANSLATIONS
+
 router = Router()
 
 
 @router.message(CommandStart())
 @logger.catch
-async def start_handler(message: Message, state: FSMContext, server:Server):
+async def start_handler(message: Message, state: FSMContext, server: Server):
     await state.clear()
     await message.delete()
     user = await server.get_user_by_id(message.from_user.id)
     lang = user.language_code
-    await message.answer(TRANSLATIONS["main_menu"][lang], reply_markup=main_menu_keyboard(lang))
+    await message.answer(
+        TRANSLATIONS["main_menu"][lang], reply_markup=main_menu_keyboard(lang)
+    )

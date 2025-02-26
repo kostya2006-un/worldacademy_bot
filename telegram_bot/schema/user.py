@@ -15,12 +15,10 @@ class User(BaseModel):
     is_premium: Annotated[Optional[bool], Field(default=False)]
     is_active: Annotated[Optional[bool], Field(default=True)]
     language_code: str
+    balance: float
 
     @classmethod
-    def map_from_aiogram_user(
-        cls,
-        aiogram_user: AiogramUser,
-    ) -> User:
+    def map_from_aiogram_user(cls, aiogram_user: AiogramUser, balance: float) -> User:
         return User(
             id_user=aiogram_user.id,
             is_bot=aiogram_user.is_bot,
@@ -30,6 +28,7 @@ class User(BaseModel):
             is_premium=aiogram_user.is_premium,
             language_code=aiogram_user.language_code,
             is_active=True,
+            balance=balance,
         )
 
 
