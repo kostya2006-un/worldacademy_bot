@@ -1,7 +1,7 @@
 from typing import List
 from .base import BaseServer
 from loguru import logger
-from telegram_bot.schema.finance import Portfolio, Value_Portfolio
+from telegram_bot.schema.finance import Portfolio, Value_Portfolio, Trade
 
 
 class FinanceAPI(BaseServer):
@@ -21,3 +21,11 @@ class FinanceAPI(BaseServer):
         if response.status_code != 200:
             return None
         return Value_Portfolio.model_validate(response.json())
+
+    @logger.catch
+    async def trade(self, trade: Trade) -> Trade | None:
+        response = await self.client.post("finance/execute", json=trade.model_dump())
+        if response.status_code != 201:
+            return
+
+        return Trade.model_validate(response.json())

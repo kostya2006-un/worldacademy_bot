@@ -10,3 +10,16 @@ class Portfolio(BaseModel):
 class Value_Portfolio(BaseModel):
     user_id: int
     total_portfolio_value: float
+
+
+class Trade(BaseModel):
+    user_id: int
+    ticker: str
+    trade_type: str  # "buy" или "sell"
+    quantity: float
+
+    @classmethod
+    def create_trade(cls, user_id: int, ticker: str, trade_type: str, quantity: float):
+        return cls(
+            user_id=user_id, ticker=ticker, trade_type=trade_type, quantity=quantity
+        )
