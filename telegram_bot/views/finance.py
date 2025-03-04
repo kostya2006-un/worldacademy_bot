@@ -39,4 +39,12 @@ TRANSLATIONS = {
         "en": "💵 Enter the amount in dollars you want to buy:",
         "ru": "💵 Введите сумму в долларах, на которую хотите купить:",
     },
+    "sell_success": {
+        "en": "✅ Sale of {quantity:.4f} {ticker} completed! You received ${amount:.2f}.",
+        "ru": "✅ Продажа {quantity:.4f} {ticker} завершена! Вы получили ${amount:.2f}.",
+    },
+    "enter_amount_sell": {
+        "en": "💵 Enter the amount in tokens you want to buy:",
+        "ru": "💵 Введите количество монет которое хотите продать:",
+    },
 }
