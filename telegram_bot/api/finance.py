@@ -1,7 +1,7 @@
 from typing import List
 from .base import BaseServer
 from loguru import logger
-from telegram_bot.schema.finance import Portfolio, Value_Portfolio, Trade
+from telegram_bot.schema.finance import Portfolio, Value_Portfolio, Trade, Trade_History
 
 
 class FinanceAPI(BaseServer):
@@ -29,3 +29,12 @@ class FinanceAPI(BaseServer):
             return
 
         return Trade.model_validate(response.json())
+
+    @logger.catch
+    async def history_trade(self, user_id) -> List[Trade_History] | None:
+        response = await self.client.get(f"finance/history/{user_id}")
+        if response.status_code != 200:
+            return None
+        trade_data = response.json()
+
+        return [Trade_History(**trade) for trade in trade_data]

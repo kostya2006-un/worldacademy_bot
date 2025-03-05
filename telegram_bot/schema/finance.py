@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -23,3 +25,11 @@ class Trade(BaseModel):
         return cls(
             user_id=user_id, ticker=ticker, trade_type=trade_type, quantity=quantity
         )
+
+
+class Trade_History(BaseModel):
+    ticker: str
+    trade_type: str
+    quantity: float
+    price: float
+    timestamp: datetime

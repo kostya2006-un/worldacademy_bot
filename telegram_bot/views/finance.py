@@ -47,4 +47,21 @@ TRANSLATIONS = {
         "en": "💵 Enter the amount in tokens you want to buy:",
         "ru": "💵 Введите количество монет которое хотите продать:",
     },
+    "history": {
+        "en": "Trading history",
+        "ru": "История торгов",
+    },
+    "history_trade": {
+        "en": "Your trading history",
+        "ru": "Ваша история торгов",
+    },
+    "history_empty": {
+        "en": "You don't have any transactions yet",
+        "ru": "У вас нет совершенных сделок пока что",
+    },
+    "token": {"en": "Token", "ru": "Монета"},
+    "trade_type": {"en": "Trade type", "ru": "Тип сделки"},
+    "quantity": {"en": "Quantity", "ru": "Количество"},
+    "price": {"en": "Price", "ru": "Цена"},
+    "time": {"en": "Trade time", "ru": "Время сделки"},
 }

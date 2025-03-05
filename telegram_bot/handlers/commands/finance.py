@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
@@ -263,3 +265,28 @@ async def process_sell_amount(message: Message, state: FSMContext, server: Serve
         text, reply_markup=trading_keyboard(asset, 0, user.language_code)
     )
     await state.clear()
+
+
+@router.callback_query(lambda c: c.data.startswith("history"))
+async def history(callback: CallbackQuery, state: FSMContext, server: Server):
+    user = await server.get_user_by_id(callback.from_user.id)
+    lang = user.language_code
+    trade_history = await server.history_trade(user.id_user)
+
+    response_text = f"📈 {TRANSLATIONS['history_trade'][lang]}:\n\n"
+    if not trade_history:
+        response_text += f"{TRANSLATIONS['history_empty'][lang]}"
+    else:
+        recent_trades = reversed(trade_history[len(trade_history) - 5 :])
+        response_text += "\n\n".join(
+            [
+                f"📌 {TRANSLATIONS['token'][lang]}: {trade.ticker}\n"
+                f"🔹 {TRANSLATIONS['trade_type'][lang]}: {'🟢 Buy' if trade.trade_type == 'buy' else '🔴 Sell'}\n"
+                f"📊 {TRANSLATIONS['quantity'][lang]}: {trade.quantity}\n"
+                f"💲 {TRANSLATIONS['price'][lang]}: ${trade.price}\n"
+                f"⏳ {TRANSLATIONS['time'][lang]}: {datetime.strftime(trade.timestamp, '%Y-%m-%d %H:%M:%S')}"
+                for trade in recent_trades
+            ]
+        )
+
+    await callback.message.edit_text(response_text, reply_markup=back_trade_fin(lang))

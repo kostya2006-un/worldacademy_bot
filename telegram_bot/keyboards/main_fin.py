@@ -14,6 +14,11 @@ def main_finance_keyboard(lang: str) -> InlineKeyboardMarkup:
             ],
             [
                 InlineKeyboardButton(
+                    text=TRANSLATIONS["history"][lang], callback_data="history"
+                )
+            ],
+            [
+                InlineKeyboardButton(
                     text=TRANSLATIONS["back"][lang], callback_data="main_menu"
                 )
             ],
