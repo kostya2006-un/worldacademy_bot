@@ -4,6 +4,7 @@ from .utils import router as utils_router
 from .finance import router as finance_router
 from typing import Union
 from aiogram import Dispatcher, Router
+from .lesson import router as lesson_router
 
 
 def include_routers(router: Union[Dispatcher | Router]):
@@ -11,3 +12,4 @@ def include_routers(router: Union[Dispatcher | Router]):
     router.include_router(settings_router)
     router.include_router(utils_router)
     router.include_router(finance_router)
+    router.include_router(lesson_router)
