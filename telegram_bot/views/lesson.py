@@ -33,9 +33,30 @@ TRANSLATIONS = {
         "ru": "🎉 Тест успешно пройден!",
         "en": "🎉 Test completed successfully!",
     },
+    "back_to_lesson": {"ru": "⬅️ Назад к уроку", "en": "⬅️ Back to lesson"},
     "back_to_lessons": {"ru": "← К списку уроков", "en": "← Back to lessons"},
     "back": {
         "en": "⬅️ Back",
         "ru": "⬅️ Назад",
+    },
+    "lesson_not_found": {
+        "en": "Lesson not found!",
+        "ru": "Урок не найден!",
+    },
+    "no_answers_for_question": {
+        "en": "🚫 No answers for this question",
+        "ru": "🚫 Для этого вопроса нет ответов",
+    },
+    "no_correct_answer": {
+        "en": "🚫 No correct answer in question",
+        "ru": "🚫 В вопросе нет правильного ответа",
+    },
+    "continue_test": {
+        "en": "Continue the test!",
+        "ru": "Продолжайте тест!",
+    },
+    "test_finished": {
+        "en": "Test finished!",
+        "ru": "Тест завершен!",
     },
 }

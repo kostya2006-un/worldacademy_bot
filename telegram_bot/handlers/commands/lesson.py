@@ -11,6 +11,7 @@ from telegram_bot.keyboards.lesson import (
     lessons_keyboard,
     lesson_content_keyboard,
     lesson_test_keyboard,
+    test_keyboard,
 )
 from telegram_bot.schema.lesson import (
     UserCompletedQuestion,
@@ -103,7 +104,14 @@ async def handle_locked_lesson(callback: CallbackQuery, server: Server):
 
 
 @router.callback_query(lambda c: c.data.startswith("lesson_"))
-async def lesson_handler(callback: CallbackQuery, server: Server):
+async def lesson_handler(
+    callback: CallbackQuery, server: Server, state: FSMContext  # Добавляем FSMContext
+):
+    # Очищаем состояние теста при входе в урок
+    current_state = await state.get_state()
+    if current_state == TestStates.in_test:
+        await state.clear()
+
     _, topic_id, lesson_id = callback.data.split("_")
     topic_id = int(topic_id)
     lesson_id = int(lesson_id)
@@ -131,7 +139,7 @@ async def start_test_handler(
     # Сначала получаем урок, чтобы получить topic_id
     lesson = await server.get_lesson(lesson_id)
     if not lesson:
-        await callback.answer("Урок не найден!")
+        await callback.answer(TRANSLATIONS["lesson_not_found"][user.language_code])
         return
 
     questions = await server.get_questions_by_lesson(lesson_id)
@@ -146,13 +154,17 @@ async def start_test_handler(
             TRANSLATIONS["test_already_completed"][user.language_code]
         )
         return
-
+    try:
+        await callback.message.delete()
+    except Exception as e:
+        logger.warning(f"Не удалось удалить сообщение с уроком: {e}")
     await state.update_data(
         message=callback.message,
         current_question=0,
         questions=unanswered,
         lesson_id=lesson_id,
-        topic_id=lesson.topic_id,  # Теперь получаем topic_id из урока
+        topic_id=lesson.topic_id,
+        original_message_id=callback.message.message_id,
     )
 
     await state.set_state(TestStates.in_test)
@@ -163,24 +175,32 @@ async def send_next_question(state: FSMContext, server: Server):
     data = await state.get_data()
     question = data["questions"][data["current_question"]]
     message = data["message"]
-
+    user = await server.get_user_by_id(message.chat.id)
     try:
-        # Получаем ответы и проверяем их наличие
         answers = await server.get_answers_by_question(question.id)
         if not answers:
-            await message.answer("🚫 Для этого вопроса нет ответов")
+            await message.answer(
+                TRANSLATIONS["no_answers_for_question"][user.language_code]
+            )
             await state.clear()
             return
 
-        # Проверяем наличие правильного ответа
         correct_options = [i for i, a in enumerate(answers) if a.is_correct]
         if not correct_options:
-            await message.answer("🚫 В вопросе нет правильного ответа")
+            await message.answer(TRANSLATIONS["no_correct_answer"][user.language_code])
             await state.clear()
             return
 
-        # Отправляем опрос
-        await message.bot.send_poll(
+        # Удаляем старый опрос, если он есть
+        if "poll_message_id" in data:
+            try:
+                await message.bot.delete_message(
+                    message.chat.id, data["poll_message_id"]
+                )
+            except Exception as e:
+                logger.warning(f"Не удалось удалить старый опрос: {e}")
+
+        poll_message = await message.bot.send_poll(
             chat_id=message.chat.id,
             question=question.question_text,
             options=[a.answer_text for a in answers],
@@ -188,12 +208,16 @@ async def send_next_question(state: FSMContext, server: Server):
             correct_option_id=correct_options[0],
             is_anonymous=False,
             explanation=(
-                "Продолжайте тест!"
+                TRANSLATIONS["continue_test"][user.language_code]
                 if data["current_question"] + 1 < len(data["questions"])
-                else "Тест завершен!"
+                else TRANSLATIONS["test_finished"][user.language_code]
+            ),
+            reply_markup=test_keyboard(
+                lang=(await server.get_user_by_id(message.chat.id)).language_code
             ),
         )
 
+        await state.update_data(poll_message_id=poll_message.message_id)
     except Exception as e:
         logger.error(f"Ошибка отправки вопроса: {str(e)}")
         await state.clear()
@@ -209,7 +233,6 @@ async def handle_poll_answer(
         current_idx = data["current_question"]
         question = data["questions"][current_idx]
 
-        # Проверка правильности ответа
         answers = await server.get_answers_by_question(question.id)
         correct_option = next((i for i, a in enumerate(answers) if a.is_correct), None)
 
@@ -217,20 +240,27 @@ async def handle_poll_answer(
             await state.clear()
             return
 
-        # Если ответ неправильный - повторяем вопрос
         if poll_answer.option_ids[0] != correct_option:
             await send_next_question(state, server)
             return
 
-        # Отмечаем вопрос как пройденный
         await server.mark_question_completed(user_id, question.id)
 
-        # Проверяем, все ли вопросы урока пройдены
         completed_questions = await server.get_completed_questions(user_id)
         all_questions = await server.get_questions_by_lesson(data["lesson_id"])
         completed_question_ids = {q.question_id for q in completed_questions}
 
         if all(q.id in completed_question_ids for q in all_questions):
+            try:
+                # Удаляем опрос
+                if "poll_message_id" in data:
+                    await poll_answer.bot.delete_message(
+                        chat_id=user_id, message_id=data["poll_message_id"]
+                    )
+            except Exception as e:
+                logger.error(f"Error deleting poll: {e}")
+
+            # Отмечаем урок завершенным
             await server.mark_lesson_completed(user_id, data["lesson_id"])
 
             # Проверяем, все ли уроки темы пройдены
@@ -241,34 +271,61 @@ async def handle_poll_answer(
             if all(lesson.id in completed_lesson_ids for lesson in lessons):
                 await server.mark_topic_completed(user_id, data["topic_id"])
 
-            # Отправляем пользователя в меню выбора урока
-            await state.clear()
-            await poll_answer.user.send_message(
-                "✅ Урок завершен! Выберите следующий урок:",
-                reply_markup=await lessons_keyboard(data["topic_id"], server),
+            # Отправляем сообщение о завершении теста
+            user = await server.get_user_by_id(user_id)
+            lang = user.language_code
+
+            await poll_answer.bot.send_message(
+                chat_id=user_id,
+                text=TRANSLATIONS["test_completed"][lang],
+                reply_markup=lessons_keyboard(
+                    lessons=lessons,
+                    completed_lesson_ids=completed_lesson_ids,
+                    available_lesson_id=max(completed_lesson_ids, default=0) + 1,
+                    topic_id=data["topic_id"],
+                    lang=lang,
+                ),
             )
+
+            await state.clear()
             return
 
-        # Переход к следующему вопросу или завершение
-        if current_idx + 1 >= len(data["questions"]):
-            await state.clear()
-            await send_test_completion_message(user_id, data["lesson_id"], server)
-        else:
+        if current_idx + 1 < len(data["questions"]):
             await state.update_data(current_question=current_idx + 1)
             await send_next_question(state, server)
+        else:
+            await state.clear()
 
     except Exception as e:
         logger.error(f"Ошибка обработки: {str(e)}")
         await state.clear()
 
 
-async def send_test_completion_message(user_id: int, lesson_id: int, server: Server):
-    lesson = await server.get_lesson(lesson_id)
-    user = await server.get_user_by_id(user_id)
-    lang = user.language_code
+@router.callback_query(F.data == "back_to_lesson")
+async def handle_back_to_lesson(
+    callback: CallbackQuery, state: FSMContext, server: Server
+):
+    data = await state.get_data()
 
-    # await server.bot.send_message(
-    #     chat_id=user_id,
-    #     text=TRANSLATIONS["test_completed"].get(lang, "🎉 Тест завершен!"),
-    #     reply_markup=lesson_test_keyboard(lesson.topic_id, lang),
-    # )
+    try:
+        # Удаляем опрос если существует
+        if "poll_message_id" in data:
+            await callback.bot.delete_message(
+                chat_id=callback.message.chat.id, message_id=data["poll_message_id"]
+            )
+    except Exception as e:
+        logger.error(f"Ошибка удаления опроса: {e}")
+
+    # Очищаем состояние теста
+    await state.clear()
+
+    # Отправляем заново сообщение с уроком
+    lesson = await server.get_lesson(data["lesson_id"])
+    await callback.message.answer(
+        text=f"📖 {lesson.title}\n\n{lesson.content}",
+        reply_markup=lesson_content_keyboard(
+            topic_id=data["topic_id"],
+            lesson_id=data["lesson_id"],
+            lang=callback.from_user.language_code,
+        ),
+    )

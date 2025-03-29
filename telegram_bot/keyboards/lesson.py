@@ -76,14 +76,16 @@ def lesson_content_keyboard(
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text=TRANSLATIONS["back"][lang], callback_data=f"topic_{topic_id}"
-                ),
-                InlineKeyboardButton(
                     text=TRANSLATIONS["start_test"][lang],
-                    # Добавляем ID урока в callback_data
                     callback_data=f"test_{lesson_id}",
-                ),
-            ]
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text=TRANSLATIONS["back"][lang],  # Кнопка назад к списку уроков
+                    callback_data=f"topic_{topic_id}",
+                )
+            ],
         ]
     )
 
@@ -95,6 +97,19 @@ def lesson_test_keyboard(topic_id: int, lang: str):
                 InlineKeyboardButton(
                     text=TRANSLATIONS["back_to_lessons"][lang],
                     callback_data=f"topic_{topic_id}",
+                )
+            ]
+        ]
+    )
+
+
+def test_keyboard(lang: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=TRANSLATIONS["back_to_lesson"][lang],
+                    callback_data="back_to_lesson",
                 )
             ]
         ]
